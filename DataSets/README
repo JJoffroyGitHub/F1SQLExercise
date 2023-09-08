@@ -1,0 +1,49 @@
+F1 Dataset is available at: https://www.kaggle.com/datasets/rohanrao/formula-1-world-championship-1950-2020
+
+This is a personal MySQL project, used to sharpen and re-visit old skills during workplace downtime.
+
+It has been put together by loading the tables to MySQL Workbench on a local instance, using the Table Data Import Wizard.
+
+Some of the data hit errors when it was loading, and attempts have been made to rectify some of the data type issues via the Table Alterations. However as this is a practice dataset some of the errors have been left alone so as to prioritise the actual querying of the data.
+
+The data is relevant up until the start of the 2023 season, so some data may be slightly out of sync e.g. Lewis Hamilton has had 4 podiums this season at the time of writing, so his podium count in the resulting queries is 4 too low.
+
+The first query is focusing primarily on tracking Drivers' overall involvement in F1, but only for those who, according to the dataset, have a number assigned. The query compiles Driver Name, Number, Total Seasons, Total Races, Points, Points Per Race, Total Wins, Total Podiums,
+Pole Positions, Sprint Wins, Sprint Podiums etc
+
+The issue with this part of dataset is that retirements, accidents, collisions etc are not fully clear. The statusIds are too varied, meaning that it's hard to track for general DNFs.
+I took the decision to only catch for Disqualifications and Retirements, but this could be expanded out by examining the other statusIds and grouping them. 
+I chose not to do this, however, as statuses like 'Collision' and 'Accident' are ambiguous.
+
+The second query concerns itself with drivers who didn't have a seat at ANY point in 2022. 
+This was achieved by adding an additional JOIN that pulled in the results table, joining the races table and using an Aggregation on the races.raceDate column to pull in the latest date
+This is then referenced in the main SELECT query, using an if statement to determine if the driver raced AT ALL in 2022. If so they are not considered in scope for the query and are removed using the HAVING clause.
+Originally a WHERE clause was added to try to remove this   
+
+The third query is a simple one, collating all races that have happened at each circuit as part of the regular season. 
+When building out this query, I noted that the Last Race at each location column contained some dates from this year's season, however the results only go up to the end of 2022.
+Therefore, some of the driver information is out of sync, as mentioned before - while the whole calendar for 2023 is up to date.
+As this is a practice project, this isn't super important, but something to keep in mind.
+In the Circuits Query, I have included a WHERE r.RaceDate < CURDATE() clause to pull in the MAX but only where it is before the current date.
+
+Another issue that has been unconvered by querying the dataset is the '0' position in the results table. I have deleted these in the Table Alerations Query. This was determined by checking the previous work done on the drivers query.
+In that query I determined that a position of 1 equals a win - and verified this by checking it against real-world data.
+
+Trying to determine who the Last Race Winner at each circuit has proved very difficult. Ultimately I set about creating a table that would contain the ID, name, location, country, last race at the track and the last winner at the track
+The difficult part came in when I was trying to determine the last winner at the circuit - as I was already using a MAX aggregation in the SELECT query, I had to use GROUP BY to combine everything.
+The issue with using the GROUP BY meant that every winner for every race was being pulled in, not just the latest. There was no way to feasibly aggregate on the Driver Name within the query.
+
+What I did instead was create a separate query to create a separate table, to produce a table that would be limited to just the name of the circuit, the last winner at it etc
+
+I then joined this separate table to the main query and used the fields from there, so that I no longer had to use GROUP BYs
+
+To find out the fastest lap, I joined another temporary table connecting circuits to races, races to results and results to drivers. I used the MIN aggregation to get the lowest and therefore the quickest laptime.
+The issue with this is that some lap times are unregistered and show as 0s, as well as a few nulls. I caught this with 'WHERE rr.fastestlapTime IS NOT NULL AND rr.fastestlapTime > 0'.
+
+Moving on to creating the Constructor All Time Results
+
+This was always going to be a simple compilation of statistics as I'd be looking to move on from these queries soon.
+It consists of constructor Id, reference, constructor name, total points (from the constructor results table), and the max and min of the race dates.
+There are some issues with some of the very early constructors, as the results for them aren't fully populated. However, as this is a practice dataset we'll be ignoring those to push on with the project.
+
+
